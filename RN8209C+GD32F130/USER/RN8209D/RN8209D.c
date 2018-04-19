@@ -3,6 +3,7 @@
 uint8_t 		USART2_RxBuf[USART_REC_LEN] ;        //发送缓冲区
 uint8_t		USART2_TxBuf[USART_REC_LEN] ;        //接收缓冲区
 uint8_t   USART2_RX_STA =0 ;
+ volatile  uint8_t  Data_Len ;
 
 //void TIM4_IRQHandler(void)
 //{ 	
@@ -27,7 +28,7 @@ void TIMER2_IRQHandler(void)
         //printf("0x%x \n",USART2_RX_STA);        		
         timer_interrupt_flag_clear(TIMER2, TIMER_INT_FLAG_UP);  //清除TIM7更新中断标志 
         timer_disable(TIMER2);  //关闭TIM2 
-        usart_interrupt_disable(USART1, USART_INT_RBNE);
+       // usart_interrupt_disable(USART1, USART_INT_RBNE);
           
                 
     }
@@ -35,35 +36,43 @@ void TIMER2_IRQHandler(void)
    
 }
 
+/***************************************************************
+*Function name:
+*
+*Description: 
+*
+*Parameters:
+*
+*Returned value: NONE
+*
+*Version :  v1.0
+*
+*Data&Author: 2018/1/10&SR
+*****************************************************************/
 
 void USART1_IRQHandler(void)
 {
-	uint8_t data=0  ;
-	 if(SET == usart_interrupt_flag_get(USART1, USART_INT_FLAG_RBNE))//接收中断
+		uint8_t data=0  ;
+	 if(SET == usart_flag_get(USART1, USART_FLAG_RBNE))//接收中断
 	{		
 		data = usart_data_receive(USART1);
-		printf("rec:0x%x ",data);
+
 		if((USART2_RX_STA &(1<<7))==0) //判断接收完成标志位是否清空，清空后才能再次接收
 		{
-			if(USART2_RX_STA<USART_REC_LEN)	//还可以接收数据
-		//	if(USART2_RX_STA<1)	//还可以接收数据
-			{
-				timer_counter_value_config(TIMER2,0);        //计数器清空
-				if(USART2_RX_STA==0) 				//当接收长度为0时,开启定时器 
-				{
-					 timer_enable(TIMER2);//使能定时器7,当超时10ms强制接收完成
-				}
-				USART2_RxBuf[USART2_RX_STA++]=data;	//记录接收到的值	 
-			}else 
-			{
-				USART2_RX_STA|=1<<7;				//强制标记接收完成	
-			}	
-		}  	
-       
-	}
-     usart_interrupt_flag_clear(USART1 , USART_INT_RBNE);
 
+			if(USART2_RX_STA <Data_Len)	//还可以接收数据
+			{
+                 USART2_RxBuf[USART2_RX_STA++]=data;	//记录接收到的值.                              
+			}
+            if(USART2_RX_STA == Data_Len) 
+			{
+				USART2_RX_STA  =  USART2_RX_STA|0x80;				//强制标记接收完成	
+			}	
+		}  	       
+	}
+     usart_flag_clear(USART1 , USART_FLAG_RBNE);
 }
+
 
 void nvic_configuration(void)
 {
@@ -271,21 +280,16 @@ ErrStatus RN8209D_ReadData(uint8_t wReg,uint8_t *pBuf,uint8_t ucLen)
 		chksum=wReg;
 		j = 0;
         timeout=0;	
+        Data_Len = ucLen +1;
 		//发送命令字，即需要读数据的寄存器地址
-//		while(USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET) ;	  
-//		USART_SendData(USART2,temp);
+       
         while(usart_flag_get(USART1, USART_FLAG_TC) == RESET) ;	  
 		    usart_data_transmit(USART1,temp);
-        usart_interrupt_enable(USART1, USART_INT_RBNE);
-        
-        
-		//等待串口接收完成，并做超时
   
     do
       {	      
-       delay_1ms(1000);
-       timeout++;			
-	    // printf("0x%x \n",USART2_RX_STA);
+        delay_1ms(100);
+        timeout++;			
 		}while( ((timeout == 0xFF) ||(USART2_RX_STA & (1<<7)) == 0)  ); //当超时次数等于0xFF或者接收标志位为1时跳出
 		//判断是否超时，若超时，跳出循环
 		if(timeout == 0xFF )
@@ -296,10 +300,11 @@ ErrStatus RN8209D_ReadData(uint8_t wReg,uint8_t *pBuf,uint8_t ucLen)
 		
        else if((USART2_RX_STA & (1<<7)) != 0)	  //
        {
-			
+//			
 			for(k=0;k<(USART2_RX_STA&0x7F);k++)
 			{
-				printf("USART2_RxBuf[%d]=%x \n",k,USART2_RxBuf[k]);
+				
+                printf("USART2_RxBuf[%d] = 0x%x \n",k,USART2_RxBuf[k]);
 				
 			}
 			//将接收到的数据调整高字节位和低字节位，并计算校验值
@@ -311,17 +316,18 @@ ErrStatus RN8209D_ReadData(uint8_t wReg,uint8_t *pBuf,uint8_t ucLen)
 			chksum = ~(chksum);
 			temp=USART2_RxBuf[j++];
 			
-//			if(temp!=chksum)  
-//				{
-//					err = ERROR;
-//					for(i = ucLen; i > 0;i--) 
-//					    pBuf[i-1] = 0;
-//					 USART2_RX_STA=0;
-//				}
+			if(temp!=chksum)  
+				{
+					err = ERROR;
+					for(i = ucLen; i > 0;i--) 
+					    pBuf[i-1] = 0;
+					 USART2_RX_STA=0;
+				}
 			if(err == SUCCESS)
 			{   
 				  Repeat =0;
 				  USART2_RX_STA=0;
+                  
 					break;  //接收数据校验正确，跳出
 			   
 			}
@@ -329,7 +335,7 @@ ErrStatus RN8209D_ReadData(uint8_t wReg,uint8_t *pBuf,uint8_t ucLen)
 			
 		}			 	  	
 	}     
-	
+  Data_Len = 0;	
   USART2_RX_STA=0;
 	return(err);
 	
@@ -384,6 +390,7 @@ void RN8209_Init(void)
 	RN8209D_WriteData(ADIBGain, pbuf, 2);
     
     RN8209D_ReadData(ADIBGain ,(uint8_t* )&data ,2);
- 	printf("data: 0x%x---------------------------  \n" , data);
+ 	printf("ADIBGain: 0x%x---------------------------  \n" , data);
+    delay_1ms(1000);
 }
 

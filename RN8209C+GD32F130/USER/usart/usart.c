@@ -22,9 +22,8 @@ void usart_init(uint32_t  bound)
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);  //中断组设置
     nvic_irq_enable(USART1_IRQn, 1, 1);    
     
-    TIM2_Int_Init(10000,4800);    //初始化定时器2
     USART2_RX_STA=0;
-    timer_disable(TIMER2);        //关闭定时器2
+
     
     
 }

@@ -28,7 +28,7 @@
     \retval     none
 */
 
-uint8_t SendData[2] = {'a','b'};
+uint8_t SendData[4] = {0x82,0x09,0x00,0xF5};
 
 
 
@@ -41,20 +41,25 @@ uint8_t SendData[2] = {'a','b'};
 */
 int main(void)
 {
-    uint32_t data = 0;
+    uint32_t data = 0 , frequent=0,ia=0  ,ADC_U=0,powera=0,id =0;
+    SystemInit();
     systick_config();
     RS485_init(9600);    
     RS485_TX_EN;
-    printf("测试");
     RN8209_Init();
-    
+    RN8209D_ReadData(ADDeviceID ,(uint8_t* )&id ,3);
+	printf("DeviceID: 0x%x---------------------------  \n" , id);
 
     while (1)
     {	
-        
-         RN8209D_ReadData(ADDeviceID ,(uint8_t* )&data ,3);
- 	     printf("data: 0x%x---------------------------  \n" , data);
-         delay_1ms(1800);
+   
+         delay_1ms(1000);
+         RN8209D_ReadData(ADURMS ,(uint8_t* )&ADC_U ,3);
+	     printf("电压有效值: 0x%x---------------------------  \n" , ADC_U);
+         delay_1ms(1000);
+         RN8209D_ReadData(ADUFreq ,(uint8_t* )&frequent ,2);
+	     printf("频率: 0x%x---------------------------  \n" , frequent);        
+         delay_1ms(5000);
                  
     }
         

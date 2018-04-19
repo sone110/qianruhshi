@@ -170,12 +170,26 @@ void SysTick_Handler(void)
 //void USART1_IRQHandler()
 //{
 //    uint8_t data ;
-//    if(RESET != usart_interrupt_flag_get(USART1, USART_INT_FLAG_RBNE)){
+//    if(RESET != usart_interrupt_flag_get(USART1, USART_INT_FLAG_RBNE))
+//      {
 //        /* receive data */
 //        data = usart_data_receive(USART1);
+//        printf("串口数据：0x%x \n",data);
+//       usart_flag_clear(USART1 , USART_FLAG_ORERR);
+//          usart_interrupt_flag_clear(USART1 ,  USART_INT_FLAG_RBNE);
 //        
 //      }
-//    printf("串口数据：0x%x \n",data);
-//    usart_interrupt_flag_clear(USART1 , USART_INT_FLAG_RBNE);
-
+//      if(RESET != usart_interrupt_flag_get(USART1, USART_INT_FLAG_RBNE_ORERR))
+//      {
+//        /* receive data */
+//        data = usart_data_receive(USART1);
+//      //  printf("串口数据：0x%x \n",data);
+//       //usart_flag_clear(USART1 , USART_FLAG_ORERR);
+//        usart_interrupt_flag_clear(USART1 ,  USART_FLAG_ORERR);
+//        
+//      }
+//     
+//  
+//    // printf("sdfds");
+//   
 //}
