@@ -13,12 +13,14 @@ void RS485_init(uint16_t  bound)
     usart_stop_bit_set(USART0, USART_STB_1BIT ) ;    //停止位设置
     //usart_parity_config(USART0 , USART_PM_NONE);     //偶校验设置
     usart_transmit_config(USART0, USART_TRANSMIT_ENABLE);
-    usart_receive_config(USART0, USART_RECEIVE_ENABLE);
+//    usart_receive_config(USART0, USART_RECEIVE_ENABLE);
     usart_enable(USART0);
-    usart_interrupt_enable(USART0, USART_INT_RBNE);  //开启接收中断
+    usart_interrupt_enable(USART0, USART_INT_RBNE );  //开启接收中断
+//	  usart_interrupt_enable(USART0, USART_INT_TBE ); 
+//	  usart_flag_clear(USART0,USART_FLAG_TBE);
     //中断设置
-    nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
-    nvic_irq_enable(USART0_IRQn, 1, 4);
+  
+	  
 }
 
 void RS485_gpio_init(void)

@@ -38,7 +38,8 @@ void PendSV_Handler(void);
 void SysTick_Handler(void);
 
 void TIMER2_IRQHandler(void);
-
+void TIMER13_IRQHandler(void);
+void USART0_IRQHandler(void);
 void USART1_IRQHandler(void);
 #endif /* GD32F1X0_IT_H */
 

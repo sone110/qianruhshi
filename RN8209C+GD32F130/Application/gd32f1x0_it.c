@@ -17,6 +17,7 @@
 #include "systick.h"
 #include "RN8209D.h"
 #include "RS485.h"
+#include "port.h"
 
 extern uint8_t 		USART2_RxBuf[USART_REC_LEN] ;        //发送缓冲区
 extern uint8_t		USART2_TxBuf[USART_REC_LEN] ;        //接收缓冲区
@@ -193,3 +194,32 @@ void SysTick_Handler(void)
 //    // printf("sdfds");
 //   
 //}
+void USART0_IRQHandler()
+{
+	uint8_t data=0;
+	
+	if(RESET != usart_flag_get(USART0, USART_FLAG_RBNE)){
+        /* receive data */
+        //data = usart_data_receive(USART0);
+		    //usart_data_transmit(USART1,data);
+        prvvUARTRxISR();
+		    usart_flag_clear(USART0 , USART_FLAG_RBNE);
+        
+        
+    }
+
+    if(RESET != usart_flag_get(USART0, USART_FLAG_TBE)){
+        /* transmit data */
+       prvvUARTTxReadyISR(); 
+			 usart_interrupt_flag_clear(USART0 , USART_FLAG_TBE);
+		}
+
+	
+
+}
+void TIMER13_IRQHandler(void)
+{
+	//uint8_t * data ="asas";
+	prvvTIMERExpiredISR();
+	timer_interrupt_flag_clear(TIMER13, TIMER_INT_FLAG_UP); 
+}
