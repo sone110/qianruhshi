@@ -71,6 +71,7 @@ void RS485_Send_Data(uint8_t *buf,uint8_t len)
  
 	while(usart_flag_get(USART0, USART_FLAG_TC) == RESET) ;		   
 	RS485_RX_EN;				//设置为接收模式	
+	
 }
 
 

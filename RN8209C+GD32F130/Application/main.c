@@ -25,52 +25,52 @@
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
 #include "mbport.h"
+#include "mbutils.h"
 /* ----------------------- Defines ------------------------------------------*/
+#define REG_COILS_START  0
+#define REG_COILS_NREGS  4
 #define REG_INPUT_START 0
-#define REG_INPUT_NREGS 8
+#define REG_INPUT_NREGS 255
 #define REG_HOLDING_START 	0
-#define REG_HOLDING_NREGS 	8
+#define REG_HOLDING_NREGS 	255
 /* ----------------------- Static variables ---------------------------------*/
+static USHORT   usRegCoilsStart = REG_COILS_START;
+static UCHAR    usRegCoilsData = 0x00;            //定义8个线圈，对应1个字节
+static UCHAR *   usRegCoilsPoint = &usRegCoilsData;
 static USHORT   usRegInputStart = REG_INPUT_START;
-static USHORT   usRegInputBuf[REG_INPUT_NREGS]={0x147b,0x3f8e,0x147b,0x400e,0x1eb8,0x4055,0x147b,0x408e};
+static USHORT   usRegInputBuf[REG_INPUT_NREGS]={0x147b,0x3f8e,0x147b,0x400e,0x1eb8,0x4055,0x147b,0x408e,1255,2555,1238};
 static USHORT   usRegHoldingStart = REG_HOLDING_START;
-static USHORT   usRegHoldingBuf[REG_HOLDING_NREGS]=
-{0x147b,0x3f8e,0x147b,0x400e,0x1eb8,0x4055,0x147b,0x408e};
+static USHORT   usRegHoldingBuf[REG_HOLDING_NREGS]={0x147b,0x3f8e,0x147b,0x400e,0x1eb8,0x4055,0x147b,0x408e,1234,5678};
 
-/*!
-    \brief      toggle the led every 500ms
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
+USHORT   usSCoilStart                                 = REG_COILS_START;
+#if REG_COILS_NREGS%8     //判断是否为8的整数倍
+UCHAR    ucSCoilBuf[REG_COILS_NREGS/8+1] ={0x00}               ;
+#else
+UCHAR    ucSCoilBuf[REG_COILS_NREGS/8]                   ;
+#endif
 
-uint8_t SendData[4] = {0x82,0x09,0x00,0xF5};
+void Relay_init()
+{
+	  rcu_periph_clock_enable(RCU_GPIOA);
+	  gpio_mode_set(GPIOA , GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP,GPIO_PIN_4);
+    gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ,GPIO_PIN_4);
+}
 
-
-
-
-/*!
-    \brief      main function
-    \param[in]  none
-    \param[out] none
-    \retval     none
-*/
 int main(void)
 {
-	  uint8_t * data ="asas";
-	
-    SystemInit();
+	  SystemInit();
     systick_config();
+	  Relay_init();
+	  RN8209_Init();
 	  nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
-    nvic_irq_enable(USART0_IRQn, 1, 3);
-	  usart_init(9600);
+    nvic_irq_enable(USART0_IRQn, 1, 3); 
 		eMBInit(MB_RTU, 0x01, 0, 9600, MB_PAR_NONE);
 	  eMBEnable();
 
     while (1)
     {	
-
-        eMBPoll();        
+        eMBPoll();
+			  gpio_bit_write(GPIOA , GPIO_PIN_4 ,  ucSCoilBuf[0]);        			
     }
         
 }
@@ -98,7 +98,7 @@ eMBRegInputCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNRegs )
     eMBErrorCode    eStatus = MB_ENOERR;
     int             iRegIndex;
 
-	
+	  usAddress--;
     if( ( usAddress >= REG_INPUT_START )
         && ( usAddress + usNRegs <= REG_INPUT_START + REG_INPUT_NREGS ) )
     {
@@ -138,7 +138,7 @@ eMBRegHoldingCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNRegs, eMBRegi
 	eMBErrorCode    eStatus = MB_ENOERR;
 	int             iRegIndex;
 
- // USART_SendByte(0x03);
+	usAddress--;
 	if((usAddress >= REG_HOLDING_START)&&\
 		((usAddress+usNRegs) <= (REG_HOLDING_START + REG_HOLDING_NREGS)))
 	{
@@ -188,33 +188,50 @@ eMBRegHoldingCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNRegs, eMBRegi
 eMBErrorCode
 eMBRegCoilsCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNCoils, eMBRegisterMode eMode )
 {
-	eMBErrorCode    eStatus = MB_ENOERR;
-	int             iRegIndex;
-
-  //USART_SendByte(0x02);
-	if((usAddress >= REG_HOLDING_START)&&\
-		((usAddress+usNCoils) <= (REG_HOLDING_START + REG_HOLDING_NREGS)))
+	 eMBErrorCode    eStatus = MB_ENOERR;
+	 USHORT          iRegIndex , iRegBitIndex , iNReg;
+   UCHAR *         pucCoilBuf;
+	 pucCoilBuf = ucSCoilBuf ;
+   iNReg =  usNCoils / 8 + 1;   //判断寄存器个数
+   usAddress--;
+	if((usAddress >= REG_COILS_START)&&\
+		((usAddress+usNCoils) <= (REG_COILS_START + REG_COILS_NREGS)))
 	{
-		iRegIndex = (int)(usAddress - usRegHoldingStart);
+			
+		 iRegIndex = (USHORT) (usAddress - usRegCoilsStart) / 8;  //计算字节数
+     iRegBitIndex = (USHORT) (usAddress - usRegCoilsStart) % 8;
+		 		  
 		switch(eMode)
 		{                                       
 			case MB_REG_READ://读 MB_REG_READ = 0
-        while(usNCoils > 0)
+				
+        while(iNReg > 0)
 				{
- 					*pucRegBuffer++ = (uint8_t)(usRegHoldingBuf[iRegIndex] >> 8);            
- 					*pucRegBuffer++ = (uint8_t)(usRegHoldingBuf[iRegIndex] & 0xFF); 
-          iRegIndex++;
-          usNCoils--;					
-				}                            
+					 *pucRegBuffer = pucCoilBuf[0];
+					//*pucRegBuffer++ = xMBUtilGetBits(&pucCoilBuf[iRegIndex++],iRegBitIndex, 4);
+           iNReg-- ;
+           					
+         			            					
+				}   
         break;
+				
+				
+				
 			case MB_REG_WRITE://写 MB_REG_WRITE = 1
-				while(usNCoils > 0)
-				{         
- 					usRegHoldingBuf[iRegIndex] = *pucRegBuffer++ << 8;
-           usRegHoldingBuf[iRegIndex] |= *pucRegBuffer++;
-          iRegIndex++;
-          usNCoils--;
-        }				
+				while (iNReg > 0)
+            {							
+                iNReg--;
+            }
+            /* last coils */
+            usNCoils = usNCoils % 8;
+            /* xMBUtilSetBits has bug when ucNBits is zero */
+            if (usNCoils != 0)
+            {
+                xMBUtilSetBits(&pucCoilBuf[iRegIndex++], iRegBitIndex, usNCoils,
+                        *pucRegBuffer++);
+            }
+            break;
+						
 			}
 	}
 	else//错误

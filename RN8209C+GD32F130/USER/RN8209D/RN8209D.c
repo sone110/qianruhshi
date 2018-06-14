@@ -385,12 +385,11 @@ void RN8209_Init(void)
 {
 	uint32_t data=0;
 	uint8_t pbuf[]={0x00,0x02};
-    nvic_configuration();
-    usart_init(4800);
-	RN8209D_WriteData(ADIBGain, pbuf, 2);
-    
-    RN8209D_ReadData(ADIBGain ,(uint8_t* )&data ,2);
- 	printf("ADIBGain: 0x%x---------------------------  \n" , data);
-    delay_1ms(1000);
+  nvic_configuration();
+  usart_init(4800);
+//	RN8209D_WriteData(ADIBGain, pbuf, 2);    
+//  RN8209D_ReadData(ADIBGain ,(uint8_t* )&data ,2);
+//  printf("ADIBGain: 0x%x---------------------------  \n" , data);
+  delay_1ms(1000);
 }
 
