@@ -58,10 +58,12 @@ void Relay_init()
 
 int main(void)
 {
+	  uint32_t data = 0 , frequent=0,ia=0  ,ADC_U=0,powera=0,id =0;
 	  SystemInit();
     systick_config();
 	  Relay_init();
 	  RN8209_Init();
+	  
 	  nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
     nvic_irq_enable(USART0_IRQn, 1, 3); 
 		eMBInit(MB_RTU, 0x01, 0, 9600, MB_PAR_NONE);
@@ -70,7 +72,11 @@ int main(void)
     while (1)
     {	
         eMBPoll();
-			  gpio_bit_write(GPIOA , GPIO_PIN_4 ,  ucSCoilBuf[0]);        			
+			  gpio_bit_write(GPIOA , GPIO_PIN_4 ,  ucSCoilBuf[0]);  
+        RN8209D_ReadData(ADURMS ,(uint8_t* )&ADC_U ,3);
+        usRegHoldingBuf[1] = (USHORT)ADC_U ;
+        //printf("电压有效值: 0x%x---------------------------  \n" , usRegHoldingBuf[0]);			
+        delay_1ms(100);			
     }
         
 }

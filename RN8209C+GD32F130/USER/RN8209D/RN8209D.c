@@ -301,12 +301,12 @@ ErrStatus RN8209D_ReadData(uint8_t wReg,uint8_t *pBuf,uint8_t ucLen)
        else if((USART2_RX_STA & (1<<7)) != 0)	  //
        {
 //			
-			for(k=0;k<(USART2_RX_STA&0x7F);k++)
-			{
-				
-                printf("USART2_RxBuf[%d] = 0x%x \n",k,USART2_RxBuf[k]);
-				
-			}
+//			for(k=0;k<(USART2_RX_STA&0x7F);k++)
+//			{
+//				
+//                printf("USART2_RxBuf[%d] = 0x%x \n",k,USART2_RxBuf[k]);
+//				
+//			}
 			//将接收到的数据调整高字节位和低字节位，并计算校验值
 			for(i = (ucLen ); i > 0;i--)
 				{
@@ -390,6 +390,7 @@ void RN8209_Init(void)
 //	RN8209D_WriteData(ADIBGain, pbuf, 2);    
 //  RN8209D_ReadData(ADIBGain ,(uint8_t* )&data ,2);
 //  printf("ADIBGain: 0x%x---------------------------  \n" , data);
+	
   delay_1ms(1000);
 }
 
