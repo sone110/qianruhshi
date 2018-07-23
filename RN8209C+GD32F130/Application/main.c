@@ -74,9 +74,9 @@ int main(void)
         eMBPoll();
 			  gpio_bit_write(GPIOA , GPIO_PIN_4 ,  ucSCoilBuf[0]);  
         RN8209D_ReadData(ADURMS ,(uint8_t* )&ADC_U ,3);
-        usRegHoldingBuf[1] = (USHORT)ADC_U ;
-        //printf("电压有效值: 0x%x---------------------------  \n" , usRegHoldingBuf[0]);			
-        delay_1ms(100);			
+        usRegHoldingBuf[0] = (USHORT)ADC_U ;
+        
+        delay_1ms(200);			
     }
         
 }
